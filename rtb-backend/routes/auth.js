@@ -43,7 +43,7 @@ router.post("/login", async (req, res) => {
       token: "jwt-token-placeholder",
       role: user.role,
       user: {
-        id: user._id,
+        id: user.id,
         username: user.username,
         email: user.email,
         role: user.role

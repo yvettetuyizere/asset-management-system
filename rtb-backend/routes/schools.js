@@ -13,7 +13,7 @@ router.get("/", async (req, res) => {
     if (district) filter.district = district;
     if (sector) filter.sector = sector;
 
-    const schools = await School.find(filter).sort({ name: 1 });
+    const schools = await School.find(filter);
     res.json(schools);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -36,8 +36,7 @@ router.get("/:id", async (req, res) => {
 // Create new school
 router.post("/", async (req, res) => {
   try {
-    const school = new School(req.body);
-    await school.save();
+    const school = await School.create(req.body);
     res.status(201).json(school);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -49,8 +48,7 @@ router.put("/:id", async (req, res) => {
   try {
     const school = await School.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, updatedAt: new Date() },
-      { new: true }
+      { ...req.body, updatedAt: new Date() }
     );
     
     if (!school) return res.status(404).json({ message: "School not found" });

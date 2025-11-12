@@ -14,12 +14,7 @@ router.get("/", async (req, res) => {
     if (school) filter.school = school;
     if (deviceType) filter.deviceType = deviceType;
 
-    const requests = await DeviceRequest.find(filter)
-      .populate("school", "name province district")
-      .populate("requestedBy", "email")
-      .populate("reviewedBy", "email")
-      .populate("assignedDevices")
-      .sort({ createdAt: -1 });
+    const requests = await DeviceRequest.find(filter);
     
     res.json(requests);
   } catch (error) {
@@ -30,11 +25,7 @@ router.get("/", async (req, res) => {
 // Get request by ID
 router.get("/:id", async (req, res) => {
   try {
-    const request = await DeviceRequest.findById(req.params.id)
-      .populate("school", "name province district headteacher")
-      .populate("requestedBy", "email")
-      .populate("reviewedBy", "email")
-      .populate("assignedDevices");
+    const request = await DeviceRequest.findById(req.params.id);
     
     if (!request) return res.status(404).json({ message: "Request not found" });
     
@@ -47,12 +38,8 @@ router.get("/:id", async (req, res) => {
 // Create new request
 router.post("/", async (req, res) => {
   try {
-    const request = new DeviceRequest(req.body);
-    await request.save();
-    
-    const populatedRequest = await DeviceRequest.findById(request._id)
-      .populate("school", "name province district")
-      .populate("requestedBy", "email");
+    const request = await DeviceRequest.create(req.body);
+    const populatedRequest = await DeviceRequest.findById(request.id);
     
     res.status(201).json(populatedRequest);
   } catch (error) {
@@ -78,11 +65,8 @@ router.put("/:id/status", async (req, res) => {
     
     const request = await DeviceRequest.findByIdAndUpdate(
       req.params.id,
-      updateData,
-      { new: true }
-    ).populate("school", "name province district")
-     .populate("requestedBy", "email")
-     .populate("reviewedBy", "email");
+      updateData
+    );
     
     if (!request) return res.status(404).json({ message: "Request not found" });
     
@@ -115,28 +99,27 @@ router.post("/:id/fulfill", async (req, res) => {
     }
     
     // Assign devices to school
+    const schoolId = request.school?.id || request.school_id || request.school;
     await Device.updateMany(
       { _id: { $in: deviceIds } },
       { 
-        assignedTo: request.school,
+        assignedTo: schoolId,
         assignedDate: new Date(),
         status: "Assigned",
         updatedAt: new Date()
       }
     );
     
-    // Update request
+    // Update request and add device assignments
+    await DeviceRequest.addAssignedDevices(req.params.id, deviceIds);
     const updatedRequest = await DeviceRequest.findByIdAndUpdate(
       req.params.id,
       {
         status: "Fulfilled",
-        assignedDevices: deviceIds,
         fulfilledDate: new Date(),
         updatedAt: new Date()
-      },
-      { new: true }
-    ).populate("school", "name province district")
-     .populate("assignedDevices");
+      }
+    );
     
     res.json(updatedRequest);
   } catch (error) {

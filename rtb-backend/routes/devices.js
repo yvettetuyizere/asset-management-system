@@ -14,9 +14,7 @@ router.get("/", async (req, res) => {
     if (deviceType) filter.deviceType = deviceType;
     if (assignedTo) filter.assignedTo = assignedTo;
 
-    const devices = await Device.find(filter)
-      .populate("assignedTo", "name province district")
-      .sort({ createdAt: -1 });
+    const devices = await Device.find(filter);
     
     res.json(devices);
   } catch (error) {
@@ -27,8 +25,7 @@ router.get("/", async (req, res) => {
 // Get device by ID
 router.get("/:id", async (req, res) => {
   try {
-    const device = await Device.findById(req.params.id)
-      .populate("assignedTo", "name province district headteacher");
+    const device = await Device.findById(req.params.id);
     
     if (!device) return res.status(404).json({ message: "Device not found" });
     
@@ -41,11 +38,10 @@ router.get("/:id", async (req, res) => {
 // Create new device
 router.post("/", async (req, res) => {
   try {
-    const device = new Device(req.body);
-    await device.save();
+    const device = await Device.create(req.body);
     res.status(201).json(device);
   } catch (error) {
-    if (error.code === 11000) {
+    if (error.code === '23505') { // PostgreSQL unique violation
       res.status(400).json({ message: "Serial number already exists" });
     } else {
       res.status(500).json({ message: error.message });
@@ -58,8 +54,7 @@ router.put("/:id", async (req, res) => {
   try {
     const device = await Device.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, updatedAt: new Date() },
-      { new: true }
+      { ...req.body, updatedAt: new Date() }
     );
     
     if (!device) return res.status(404).json({ message: "Device not found" });
@@ -85,8 +80,7 @@ router.post("/:id/assign", async (req, res) => {
         assignedDate: new Date(),
         status: "Assigned",
         updatedAt: new Date()
-      },
-      { new: true }
+      }
     );
     
     if (!device) return res.status(404).json({ message: "Device not found" });
@@ -107,8 +101,7 @@ router.post("/:id/unassign", async (req, res) => {
         assignedDate: null,
         status: "Available",
         updatedAt: new Date()
-      },
-      { new: true }
+      }
     );
     
     if (!device) return res.status(404).json({ message: "Device not found" });

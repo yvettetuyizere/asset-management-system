@@ -14,12 +14,7 @@ router.get("/", async (req, res) => {
     if (issueType) filter.issueType = issueType;
     if (severity) filter.severity = severity;
 
-    const reports = await IssueReport.find(filter)
-      .populate("school", "name province district")
-      .populate("reportedBy", "email")
-      .populate("assignedTo", "email")
-      .populate("device", "serialNumber deviceType brand model")
-      .sort({ createdAt: -1 });
+    const reports = await IssueReport.find(filter);
     
     res.json(reports);
   } catch (error) {
@@ -30,11 +25,7 @@ router.get("/", async (req, res) => {
 // Get report by ID
 router.get("/:id", async (req, res) => {
   try {
-    const report = await IssueReport.findById(req.params.id)
-      .populate("school", "name province district headteacher")
-      .populate("reportedBy", "email")
-      .populate("assignedTo", "email")
-      .populate("device", "serialNumber deviceType brand model specifications");
+    const report = await IssueReport.findById(req.params.id);
     
     if (!report) return res.status(404).json({ message: "Report not found" });
     
@@ -47,13 +38,8 @@ router.get("/:id", async (req, res) => {
 // Create new report
 router.post("/", async (req, res) => {
   try {
-    const report = new IssueReport(req.body);
-    await report.save();
-    
-    const populatedReport = await IssueReport.findById(report._id)
-      .populate("school", "name province district")
-      .populate("reportedBy", "email")
-      .populate("device", "serialNumber deviceType brand model");
+    const report = await IssueReport.create(req.body);
+    const populatedReport = await IssueReport.findById(report.id);
     
     res.status(201).json(populatedReport);
   } catch (error) {
@@ -79,12 +65,8 @@ router.put("/:id/status", async (req, res) => {
     
     const report = await IssueReport.findByIdAndUpdate(
       req.params.id,
-      updateData,
-      { new: true }
-    ).populate("school", "name province district")
-     .populate("reportedBy", "email")
-     .populate("assignedTo", "email")
-     .populate("device", "serialNumber deviceType brand model");
+      updateData
+    );
     
     if (!report) return res.status(404).json({ message: "Report not found" });
     
