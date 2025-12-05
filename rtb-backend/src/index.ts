@@ -4,6 +4,8 @@ import express, { Application } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
+import swaggerUi from "swagger-ui-express";
+import { specs } from "./config/swagger";
 import { AppDataSource } from "./data-source";
 import authRoutes from "./routes/auth.routes";
 import profileRoutes from "./routes/profile.routes";
@@ -25,9 +27,32 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files (uploaded images)
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
+// Swagger UI setup
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, {
+  swaggerOptions: {
+    url: "/api-docs.json",
+    displayOperationId: true,
+    displayRequestDuration: true,
+    filter: true,
+    showExtensions: false,
+    showCommonExtensions: false,
+  },
+  customCss: `
+    .topbar { display: none; }
+    .swagger-ui .topbar-wrapper { display: none; }
+  `,
+  customSiteTitle: "RTB Asset Management API",
+}));
+
+// Serve Swagger spec as JSON
+app.get("/api-docs.json", (_req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(specs);
+});
+
 // Health check route
 app.get("/", (_req, res) => {
-  res.json({ message: "RTB Asset Management System API is running!" });
+  res.json({ message: "RTB Asset Management System API is running!", docs: "/api-docs" });
 });
 
 // Routes
@@ -50,6 +75,7 @@ AppDataSource.initialize()
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on port ${PORT}`);
       console.log(`📝 Environment: ${process.env.NODE_ENV || "development"}`);
+      console.log(`📚 Swagger UI available at http://localhost:${PORT}/api-docs`);
     });
   })
   .catch((error) => {

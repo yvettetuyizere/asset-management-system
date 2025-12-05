@@ -5,6 +5,8 @@ export interface JwtPayload {
   id: string;
   email: string;
   role: string;
+  exp?: number; // Expiration time in seconds since epoch
+  iat?: number; // Issued at time
 }
 
 export const generateToken = (payload: JwtPayload): string => {

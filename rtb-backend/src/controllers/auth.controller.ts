@@ -7,6 +7,8 @@ import { validateDto } from "../utils/validator.util";
 import { hashPassword, comparePassword } from "../utils/password.util";
 import { generateToken, generateResetToken, verifyToken } from "../utils/jwt.util";
 import { sendWelcomeEmail, sendResetPasswordEmail } from "../utils/email.util";
+import { tokenBlacklist } from "../utils/tokenBlacklist.util";
+import { AuthRequest } from "../middlewares/auth.middleware";
 
 const userRepository = AppDataSource.getRepository(User);
 
@@ -210,6 +212,35 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {
     console.error("Reset password error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const logout = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const token = req.token;
+    
+    if (!token) {
+      res.status(400).json({ message: "No token provided" });
+      return;
+    }
+
+    // Get the decoded token to access expiration time
+    const decoded = verifyToken(token);
+    
+    // Add token to blacklist with its expiration time
+    // The expiration time is typically set in the JWT (exp claim)
+    const jwtPayload = decoded as any;
+    const expiresAt = jwtPayload.exp || Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60); // Default to 7 days
+    
+    tokenBlacklist.addToBlacklist(token, expiresAt);
+
+    res.status(200).json({ 
+      message: "Logout successful",
+      success: true 
+    });
+  } catch (error) {
+    console.error("Logout error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
