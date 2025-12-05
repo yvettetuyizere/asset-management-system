@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
+// ------------------ Types ------------------
 interface Stats {
   totalDevices: number;
   assignedDevices: number;
@@ -52,12 +53,63 @@ interface Request {
 }
 
 interface User {
-  _id: string;
+  _id?: string;
   username: string;
   email: string;
   role: string;
 }
 
+// ------------------ ProfileDropdown Component ------------------
+interface ProfileDropdownProps {
+  user: User;
+  onLogout: () => void;
+}
+
+function ProfileDropdown({ user, onLogout }: ProfileDropdownProps) {
+  const [open, setOpen] = useState(false);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0].toUpperCase())
+      .join("");
+  };
+
+  return (
+    <div className="relative inline-block text-left">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white font-bold"
+      >
+        {getInitials(user.username)}
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-lg z-50">
+          <div className="p-4 border-b">
+            <p className="font-semibold">{user.username}</p>
+            <p className="text-sm text-gray-500">{user.role}</p>
+            <p className="text-xs text-gray-400">{user.email}</p>
+          </div>
+          <button
+            className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+            onClick={() => alert("Help: Call +250 123 456 789")}
+          >
+            Help
+          </button>
+          <button
+            className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600"
+            onClick={onLogout}
+          >
+            Logout
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ------------------ AdminDashboard Component ------------------
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -66,17 +118,28 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
 
+  // Mock current user
+  const [currentUser, setCurrentUser] = useState<User | null>({
+    username: "Tuyizere Yvette",
+    email: "yvette@example.com",
+    role: "Admin",
+  });
+
+  const handleLogout = () => {
+    console.log("Logging out...");
+    setCurrentUser(null);
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
-      // Fetch stats
       const [devicesRes, schoolsRes, requestsRes] = await Promise.all([
         axios.get("http://localhost:5000/api/devices"),
         axios.get("http://localhost:5000/api/schools"),
-        axios.get("http://localhost:5000/api/requests")
+        axios.get("http://localhost:5000/api/requests"),
       ]);
 
       const devicesData = devicesRes.data;
@@ -87,7 +150,6 @@ export default function AdminDashboard() {
       setSchools(schoolsData);
       setRequests(requestsData);
 
-      // Calculate stats
       const totalDevices = devicesData.length;
       const assignedDevices = devicesData.filter((d: Device) => d.status === "Assigned").length;
       const availableDevices = devicesData.filter((d: Device) => d.status === "Available").length;
@@ -99,7 +161,7 @@ export default function AdminDashboard() {
         availableDevices,
         totalSchools: schoolsData.length,
         pendingRequests,
-        totalReports: 0 // Will be updated when reports are implemented
+        totalReports: 0,
       });
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -110,10 +172,10 @@ export default function AdminDashboard() {
     try {
       await axios.put(`http://localhost:5000/api/requests/${requestId}/status`, {
         status: "Approved",
-        reviewedBy: "admin", // In real app, get from auth context
-        reviewNotes: "Approved by admin"
+        reviewedBy: currentUser?.username || "admin",
+        reviewNotes: "Approved by admin",
       });
-      fetchData(); // Refresh data
+      fetchData();
     } catch (error) {
       console.error("Error approving request:", error);
     }
@@ -123,23 +185,25 @@ export default function AdminDashboard() {
     try {
       await axios.put(`http://localhost:5000/api/requests/${requestId}/status`, {
         status: "Rejected",
-        reviewedBy: "admin",
-        reviewNotes: "Rejected by admin"
+        reviewedBy: currentUser?.username || "admin",
+        reviewNotes: "Rejected by admin",
       });
-      fetchData(); // Refresh data
+      fetchData();
     } catch (error) {
       console.error("Error rejecting request:", error);
     }
   };
 
-  if (!stats) {
-    return <div className="p-8">Loading...</div>;
-  }
+  if (!stats) return <div className="p-8">Loading...</div>;
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
-      
+      {/* Header with profile */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        {currentUser && <ProfileDropdown user={currentUser} onLogout={handleLogout} />}
+      </div>
+
       {/* Navigation Tabs */}
       <div className="mb-6">
         <div className="flex space-x-4 border-b">
@@ -159,10 +223,11 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* ---------------- Tabs Content ---------------- */}
+
       {/* Overview Tab */}
       {activeTab === "overview" && (
         <div>
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <div className="bg-white p-6 rounded-lg shadow">
               <h3 className="text-lg font-semibold text-gray-700">Total Devices</h3>
@@ -264,9 +329,7 @@ export default function AdminDashboard() {
                         device.status === "Assigned" ? "bg-blue-100 text-blue-800" :
                         device.status === "Damaged" ? "bg-red-100 text-red-800" :
                         "bg-gray-100 text-gray-800"
-                      }`}>
-                        {device.status}
-                      </span>
+                      }`}>{device.status}</span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {device.assignedTo ? `${device.assignedTo.name}, ${device.assignedTo.district}` : "Not assigned"}
@@ -339,18 +402,14 @@ export default function AdminDashboard() {
                         request.priority === "High" ? "bg-red-100 text-red-800" :
                         request.priority === "Medium" ? "bg-yellow-100 text-yellow-800" :
                         "bg-green-100 text-green-800"
-                      }`}>
-                        {request.priority}
-                      </span>
+                      }`}>{request.priority}</span>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 text-xs rounded ${
                         request.status === "Pending" ? "bg-yellow-100 text-yellow-800" :
                         request.status === "Approved" ? "bg-green-100 text-green-800" :
                         "bg-red-100 text-red-800"
-                      }`}>
-                        {request.status}
-                      </span>
+                      }`}>{request.status}</span>
                     </td>
                     <td className="px-6 py-4">
                       {request.status === "Pending" && (

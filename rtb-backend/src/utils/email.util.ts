@@ -1,4 +1,3 @@
-// src/utils/email.util.ts
 import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
@@ -18,7 +17,7 @@ export const sendResetPasswordEmail = async (
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
   const mailOptions = {
-    from: process.env.MAIL_FROM || "noreply@rtb.com",
+    from: process.env.MAIL_FROM ,
     to: email,
     subject: "Password Reset Request",
     html: `
@@ -45,6 +44,23 @@ export const sendWelcomeEmail = async (
       <h1>Welcome, ${fullName}!</h1>
       <p>Your account has been successfully created.</p>
       <p>You can now log in and start using the RTB Asset Management System.</p>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+export const sendOtpEmail = async (email: string, otp: string): Promise<void> => {
+  const mailOptions = {
+    from: process.env.MAIL_FROM ,
+    to: email,
+    subject: "Your RTB Login OTP",
+    html: `
+      <h1>Your OTP Code</h1>
+      <p>Use the following one-time code to complete your login:</p>
+      <h2>${otp}</h2>
+      <p>This code will expire in 5 minutes.</p>
+      <p>If you didn't request this, please contact support.</p>
     `,
   };
 

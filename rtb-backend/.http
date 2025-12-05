@@ -3,7 +3,7 @@
 
 ### Variables
 @baseUrl = http://localhost:5000
-@token = YOUR_TOKEN_HERE
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVkYWRmZjg0LTk5YWItNGU4Ny1iZTAzLTIxMzkzNWNiYjFhMCIsImVtYWlsIjoieXZldHRldHV5aXplcmVAZ21haWwuY29tIiwicm9sZSI6InNjaG9vbCIsImlhdCI6MTc2Mjk3MDIyNCwiZXhwIjoxNzYzMDU2NjI0fQ.-VzJIdD4TnFN5MnpTnIzSBKaluDi9RtvePCvZ2kMkn4
 @resetToken = YOUR_RESET_TOKEN_HERE
 
 ### ============================================
@@ -18,11 +18,11 @@ POST {{baseUrl}}/api/auth/register HTTP/1.1
 Content-Type: application/json
 
 {
-  "fullName": "John Doe",
-  "username": "johndoe",
-  "email": "john@example.com",
+  "fullName": "Yvette TUYIZERE",
+  "username": "yvette",
+  "email": "yvettetuyizere@gmail.com",
   "password": "password123",
-  "phoneNumber": "1234567890",
+  "phoneNumber": "0785644328",
   "gender": "Male"
 }
 
@@ -53,8 +53,16 @@ POST {{baseUrl}}/api/auth/login HTTP/1.1
 Content-Type: application/json
 
 {
-  "emailOrUsername": "johndoe",
+  "emailOrUsername": "yvette",
   "password": "password123"
+}
+### now otp verification is required
+POST {{baseUrl}}/api/auth/verify-otp
+Content-Type: application/json
+
+{
+  "emailOrUsername": "yvettetuyizere@gmail.com",
+  "otp": "478538"
 }
 
 ### 6. Login with Invalid Credentials
@@ -140,12 +148,7 @@ Content-Type: application/json
   "newPassword": "newpassword123"
 }
 
-### 15. Upload Profile Picture
-# Note: This requires multipart/form-data. Use Postman or cURL for file uploads
-# cURL example:
-# curl -X POST http://localhost:5000/api/profile/picture \
-#   -H "Authorization: Bearer YOUR_TOKEN" \
-#   -F "profilePicture=@/path/to/image.jpg"
+###
 
 POST {{baseUrl}}/api/profile/picture HTTP/1.1
 Authorization: Bearer {{token}}
@@ -155,8 +158,7 @@ Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0g
 Content-Disposition: form-data; name="profilePicture"; filename="profile.jpg"
 Content-Type: image/jpeg
 
-< /path/to/your/image.jpg
-------WebKitFormBoundary7MA4YWxkTrZu0gW--
+-
 
 ### 16. Delete Profile Picture
 DELETE {{baseUrl}}/api/profile/picture HTTP/1.1

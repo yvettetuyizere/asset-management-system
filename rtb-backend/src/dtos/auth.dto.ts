@@ -66,3 +66,14 @@ export class ChangePasswordDto {
   @MinLength(6, { message: "Password must be at least 6 characters long" })
   newPassword: string;
 }
+
+export class VerifyOtpDto {
+  @IsNotEmpty()
+  @IsString()
+  emailOrUsername: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @Matches(/^[0-9]{4,8}$/, { message: "OTP must be numeric (4-8 digits)" })
+  otp: string;
+}

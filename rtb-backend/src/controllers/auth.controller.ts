@@ -2,11 +2,12 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../data-source";
 import { User } from "../entities/User";
-import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto } from "../dtos/auth.dto";
+import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, VerifyOtpDto } from "../dtos/auth.dto";
 import { validateDto } from "../utils/validator.util";
 import { hashPassword, comparePassword } from "../utils/password.util";
 import { generateToken, generateResetToken, verifyToken } from "../utils/jwt.util";
-import { sendWelcomeEmail, sendResetPasswordEmail } from "../utils/email.util";
+import { sendWelcomeEmail, sendResetPasswordEmail, sendOtpEmail } from "../utils/email.util";
+import { createOtpForUser, verifyOtpForUser } from "../utils/otp.util";
 
 const userRepository = AppDataSource.getRepository(User);
 
@@ -108,16 +109,51 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ message: "Invalid credentials" });
       return;
     }
+    // Credentials valid — create OTP, send via email and wait for verification
+    try {
+      const otp = await createOtpForUser(user.id, 5);
+      await sendOtpEmail(user.email, otp.code);
+      res.status(200).json({ message: "OTP sent to registered email. Please verify to complete login." });
+    } catch (emailError) {
+      console.error("Failed to create/send OTP:", emailError);
+      res.status(500).json({ message: "Failed to send OTP" });
+    }
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
-    // Generate token
-    const token = generateToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
+export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { isValid, errors } = await validateDto(VerifyOtpDto, req.body);
+    if (!isValid) {
+      res.status(400).json({ message: "Validation failed", errors });
+      return;
+    }
+
+    const { emailOrUsername, otp } = req.body;
+
+    const user = await userRepository.findOne({
+      where: [{ email: emailOrUsername }, { username: emailOrUsername }],
     });
 
+    if (!user) {
+      res.status(401).json({ message: "Invalid credentials" });
+      return;
+    }
+
+    const ok = await verifyOtpForUser(user.id, otp);
+    if (!ok) {
+      res.status(401).json({ message: "Invalid or expired OTP" });
+      return;
+    }
+
+    // OTP valid — issue token and return success
+    const token = generateToken({ id: user.id, email: user.email, role: user.role });
+
     res.status(200).json({
-      message: "Login successful",
+      message: "Login verified",
       token,
       user: {
         id: user.id,
@@ -131,7 +167,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("Verify OTP error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
