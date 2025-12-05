@@ -1,0 +1,236 @@
+import swaggerJsdoc from 'swagger-jsdoc';
+
+const options = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'RTB Asset Management System API',
+      version: '1.1.0',
+      description: 'API documentation for the RTB Asset Management System',
+      contact: {
+        name: 'Support',
+        email: 'support@rtb.com',
+      },
+    },
+    servers: [
+      {
+        url: process.env.API_URL || 'http://localhost:5000',
+        description: 'Development server',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'JWT Authorization header using the Bearer scheme',
+        },
+      },
+      schemas: {
+        User: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              description: 'User ID',
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              description: 'User email address',
+            },
+            firstName: {
+              type: 'string',
+              description: 'User first name',
+            },
+            lastName: {
+              type: 'string',
+              description: 'User last name',
+            },
+            phone: {
+              type: 'string',
+              description: 'User phone number',
+            },
+            role: {
+              type: 'string',
+              enum: ['admin', 'headteacher', 'staff'],
+              description: 'User role',
+            },
+            department: {
+              type: 'string',
+              description: 'User department',
+            },
+            profilePictureUrl: {
+              type: 'string',
+              nullable: true,
+              description: 'URL to user profile picture',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Account creation date',
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Last update date',
+            },
+          },
+          required: ['id', 'email', 'firstName', 'lastName', 'role'],
+        },
+        LoginRequest: {
+          type: 'object',
+          properties: {
+            email: {
+              type: 'string',
+              format: 'email',
+              example: 'user@example.com',
+            },
+            password: {
+              type: 'string',
+              format: 'password',
+              example: 'password123',
+            },
+          },
+          required: ['email', 'password'],
+        },
+        LoginResponse: {
+          type: 'object',
+          properties: {
+            success: {
+              type: 'boolean',
+            },
+            message: {
+              type: 'string',
+            },
+            token: {
+              type: 'string',
+              description: 'JWT token',
+            },
+            user: {
+              $ref: '#/components/schemas/User',
+            },
+          },
+        },
+        RegisterRequest: {
+          type: 'object',
+          properties: {
+            email: {
+              type: 'string',
+              format: 'email',
+              example: 'user@example.com',
+            },
+            password: {
+              type: 'string',
+              format: 'password',
+              example: 'password123',
+            },
+            firstName: {
+              type: 'string',
+              example: 'John',
+            },
+            lastName: {
+              type: 'string',
+              example: 'Doe',
+            },
+            phone: {
+              type: 'string',
+              example: '+1234567890',
+            },
+            role: {
+              type: 'string',
+              enum: ['admin', 'headteacher', 'staff'],
+              example: 'staff',
+            },
+            department: {
+              type: 'string',
+              example: 'IT',
+            },
+          },
+          required: ['email', 'password', 'firstName', 'lastName', 'role'],
+        },
+        ForgotPasswordRequest: {
+          type: 'object',
+          properties: {
+            email: {
+              type: 'string',
+              format: 'email',
+              example: 'user@example.com',
+            },
+          },
+          required: ['email'],
+        },
+        ResetPasswordRequest: {
+          type: 'object',
+          properties: {
+            token: {
+              type: 'string',
+              example: 'reset_token_from_email',
+            },
+            newPassword: {
+              type: 'string',
+              format: 'password',
+              example: 'newpassword123',
+            },
+          },
+          required: ['token', 'newPassword'],
+        },
+        UpdateProfileRequest: {
+          type: 'object',
+          properties: {
+            firstName: {
+              type: 'string',
+              example: 'John',
+            },
+            lastName: {
+              type: 'string',
+              example: 'Doe',
+            },
+            phone: {
+              type: 'string',
+              example: '+1234567890',
+            },
+            department: {
+              type: 'string',
+              example: 'IT',
+            },
+          },
+        },
+        ChangePasswordRequest: {
+          type: 'object',
+          properties: {
+            currentPassword: {
+              type: 'string',
+              format: 'password',
+              example: 'currentpassword123',
+            },
+            newPassword: {
+              type: 'string',
+              format: 'password',
+              example: 'newpassword123',
+            },
+          },
+          required: ['currentPassword', 'newPassword'],
+        },
+        Error: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              description: 'Error message',
+            },
+            status: {
+              type: 'integer',
+              description: 'HTTP status code',
+            },
+          },
+        },
+      },
+    },
+  },
+  apis: ['./src/routes/*.ts', './src/controllers/*.ts'],
+};
+
+export const specs = swaggerJsdoc(options);
