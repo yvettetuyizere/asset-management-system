@@ -83,18 +83,19 @@ const options = {
         LoginRequest: {
           type: 'object',
           properties: {
-            email: {
+            emailOrUsername: {
               type: 'string',
-              format: 'email',
-              example: 'user@example.com',
+              example: 'user@example.com or username123',
+              description: 'User email or username',
             },
             password: {
               type: 'string',
               format: 'password',
               example: 'password123',
+              description: 'User password (minimum 6 characters)',
             },
           },
-          required: ['email', 'password'],
+          required: ['emailOrUsername', 'password'],
         },
         LoginResponse: {
           type: 'object',
@@ -114,42 +115,54 @@ const options = {
             },
           },
         },
+        LogoutResponse: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+            },
+            success: {
+              type: 'boolean',
+            },
+          },
+        },
         RegisterRequest: {
           type: 'object',
           properties: {
+            fullName: {
+              type: 'string',
+              example: 'John Doe',
+              description: 'User full name',
+            },
+            username: {
+              type: 'string',
+              example: 'johndoe123',
+              description: 'Unique username',
+            },
             email: {
               type: 'string',
               format: 'email',
               example: 'user@example.com',
+              description: 'User email address',
             },
             password: {
               type: 'string',
               format: 'password',
               example: 'password123',
+              description: 'Password (minimum 6 characters)',
             },
-            firstName: {
+            phoneNumber: {
               type: 'string',
-              example: 'John',
+              example: '1234567890',
+              description: 'Phone number (10-15 digits)',
             },
-            lastName: {
+            gender: {
               type: 'string',
-              example: 'Doe',
-            },
-            phone: {
-              type: 'string',
-              example: '+1234567890',
-            },
-            role: {
-              type: 'string',
-              enum: ['admin', 'headteacher', 'staff'],
-              example: 'staff',
-            },
-            department: {
-              type: 'string',
-              example: 'IT',
+              example: 'male',
+              description: 'Gender (optional)',
             },
           },
-          required: ['email', 'password', 'firstName', 'lastName', 'role'],
+          required: ['fullName', 'username', 'email', 'password', 'phoneNumber'],
         },
         ForgotPasswordRequest: {
           type: 'object',

@@ -1,6 +1,7 @@
 // src/routes/auth.routes.ts
 import { Router } from "express";
-import { register, login, forgotPassword, resetPassword } from "../controllers/auth.controller";
+import { register, login, forgotPassword, resetPassword, logout } from "../controllers/auth.controller";
+import { authenticate } from "../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -11,7 +12,7 @@ const router = Router();
  *     tags:
  *       - Authentication
  *     summary: Register a new user
- *     description: Create a new user account with email and password
+ *     description: Create a new user account with required information
  *     requestBody:
  *       required: true
  *       content:
@@ -26,14 +27,39 @@ const router = Router();
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
  *                 message:
  *                   type: string
+ *                 token:
+ *                   type: string
+ *                   description: JWT token
  *                 user:
- *                   $ref: '#/components/schemas/User'
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     fullName:
+ *                       type: string
+ *                     username:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     phoneNumber:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     gender:
+ *                       type: string
+ *                     profilePicture:
+ *                       type: string
+ *                       nullable: true
  *       400:
  *         description: Invalid input or user already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: User with this email or username already exists
  *         content:
  *           application/json:
  *             schema:
@@ -54,7 +80,7 @@ router.post("/register", register);
  *     tags:
  *       - Authentication
  *     summary: Login user
- *     description: Authenticate user with email and password
+ *     description: Authenticate user with email or username and password
  *     requestBody:
  *       required: true
  *       content:
@@ -170,5 +196,48 @@ router.post("/forgot-password", forgotPassword);
  *               $ref: '#/components/schemas/Error'
  */
 router.post("/reset-password", resetPassword);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Logout user
+ *     description: Logout the authenticated user and revoke their token
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 success:
+ *                   type: boolean
+ *       400:
+ *         description: No token provided
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Unauthorized - invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post("/logout", authenticate, logout);
 
 export default router;
