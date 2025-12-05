@@ -1,6 +1,6 @@
 // src/routes/auth.routes.ts
 import { Router } from "express";
-import { register, login, forgotPassword, resetPassword, logout } from "../controllers/auth.controller";
+import { register, login, forgotPassword, resetPassword, logout, requestOtp, verifyOtp } from "../controllers/auth.controller";
 import { authenticate } from "../middlewares/auth.middleware";
 
 const router = Router();
@@ -196,6 +196,65 @@ router.post("/forgot-password", forgotPassword);
  *               $ref: '#/components/schemas/Error'
  */
 router.post("/reset-password", resetPassword);
+
+/**
+ * @swagger
+ * /api/auth/request-otp:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Request OTP for login
+ *     description: Send an OTP code to the user's email for login
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: OTP sent successfully
+ *       400:
+ *         description: Email is required
+ *       500:
+ *         description: Server error
+ */
+router.post("/request-otp", requestOtp);
+
+/**
+ * @swagger
+ * /api/auth/verify-otp:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Verify OTP for login
+ *     description: Verify the OTP code sent to user's email
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               otp:
+ *                 type: string
+ *                 description: 6-digit OTP code
+ *     responses:
+ *       200:
+ *         description: OTP verified and token returned
+ *       401:
+ *         description: Invalid or expired OTP
+ *       500:
+ *         description: Server error
+ */
+router.post("/verify-otp", verifyOtp);
 
 /**
  * @swagger

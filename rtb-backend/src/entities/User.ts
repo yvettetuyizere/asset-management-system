@@ -18,8 +18,8 @@ export class User {
   @Column()
   password: string;
 
-  @Column({ type: "varchar", length: 20 })
-  phoneNumber: string;
+  @Column({ type: "varchar", length: 20, nullable: true })
+  phoneNumber?: string;
 
   @Column({ 
     type: "enum",

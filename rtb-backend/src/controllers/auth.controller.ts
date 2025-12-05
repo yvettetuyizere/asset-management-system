@@ -6,9 +6,10 @@ import { RegisterDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, VerifyOtpDt
 import { validateDto } from "../utils/validator.util";
 import { hashPassword, comparePassword } from "../utils/password.util";
 import { generateToken, generateResetToken, verifyToken } from "../utils/jwt.util";
-import { sendWelcomeEmail, sendResetPasswordEmail } from "../utils/email.util";
+import { sendWelcomeEmail, sendResetPasswordEmail, sendOtpEmail } from "../utils/email.util";
 import { tokenBlacklist } from "../utils/tokenBlacklist.util";
 import { AuthRequest } from "../middlewares/auth.middleware";
+import { createOtpForUser, verifyOtpForUser } from "../utils/otp.util";
 
 const userRepository = AppDataSource.getRepository(User);
 
@@ -110,51 +111,16 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       res.status(401).json({ message: "Invalid credentials" });
       return;
     }
-    // Credentials valid — create OTP, send via email and wait for verification
-    try {
-      const otp = await createOtpForUser(user.id, 5);
-      await sendOtpEmail(user.email, otp.code);
-      res.status(200).json({ message: "OTP sent to registered email. Please verify to complete login." });
-    } catch (emailError) {
-      console.error("Failed to create/send OTP:", emailError);
-      res.status(500).json({ message: "Failed to send OTP" });
-    }
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
 
-export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { isValid, errors } = await validateDto(VerifyOtpDto, req.body);
-    if (!isValid) {
-      res.status(400).json({ message: "Validation failed", errors });
-      return;
-    }
-
-    const { emailOrUsername, otp } = req.body;
-
-    const user = await userRepository.findOne({
-      where: [{ email: emailOrUsername }, { username: emailOrUsername }],
+    // Generate token
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
     });
 
-    if (!user) {
-      res.status(401).json({ message: "Invalid credentials" });
-      return;
-    }
-
-    const ok = await verifyOtpForUser(user.id, otp);
-    if (!ok) {
-      res.status(401).json({ message: "Invalid or expired OTP" });
-      return;
-    }
-
-    // OTP valid — issue token and return success
-    const token = generateToken({ id: user.id, email: user.email, role: user.role });
-
     res.status(200).json({
-      message: "Login verified",
+      message: "Login successful",
       token,
       user: {
         id: user.id,
@@ -168,7 +134,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error) {
-    console.error("Verify OTP error:", error);
+    console.error("Login error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -247,6 +213,109 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     res.status(200).json({ message: "Password reset successfully" });
   } catch (error) {
     console.error("Reset password error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const requestOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    console.log("🔐 Request OTP for:", email);
+
+    if (!email) {
+      res.status(400).json({ message: "Email is required" });
+      return;
+    }
+
+    // Find or create user
+    let user = await userRepository.findOne({ where: { email } });
+
+    if (!user) {
+      console.log("👤 Creating new user with email:", email);
+      // Create new user with temporary data (can be updated later)
+      user = userRepository.create({
+        email,
+        fullName: email.split("@")[0], // Use email prefix as temporary name
+        username: email, // Use email as temporary username
+        password: "", // Will be set later
+        role: "school", // Default role
+      });
+      await userRepository.save(user);
+      console.log("✅ New user created:", user.id);
+    }
+
+    // Generate OTP
+    console.log("🔢 Generating OTP for user:", user.id);
+    const otp = await createOtpForUser(user.id);
+    console.log("🔢 OTP generated:", otp.code, "Expires at:", otp.expiresAt);
+
+    // Send OTP email
+    try {
+      await sendOtpEmail(email, otp.code);
+      console.log("✅ OTP request completed successfully");
+      res.status(200).json({ 
+        message: "OTP sent to email successfully",
+        success: true 
+      });
+    } catch (emailError) {
+      console.error("❌ Failed to send OTP email:", emailError);
+      res.status(500).json({ message: "Failed to send OTP email", error: emailError });
+    }
+  } catch (error) {
+    console.error("❌ Request OTP error:", error);
+    res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+export const verifyOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate request body
+    const { isValid: isValidDto, errors } = await validateDto(VerifyOtpDto, req.body);
+    if (!isValidDto) {
+      res.status(400).json({ message: "Validation failed", errors });
+      return;
+    }
+
+    const { email, otp: otpCode } = req.body;
+
+    // Find user
+    const user = await userRepository.findOne({ where: { email } });
+    if (!user) {
+      res.status(401).json({ message: "Invalid email or OTP" });
+      return;
+    }
+
+    // Verify OTP
+    const isValidOtp = await verifyOtpForUser(user.id, otpCode);
+    if (!isValidOtp) {
+      res.status(401).json({ message: "Invalid or expired OTP" });
+      return;
+    }
+
+    // Generate token
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    res.status(200).json({
+      message: "OTP verified successfully",
+      token,
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        username: user.username,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        gender: user.gender,
+        profilePicture: user.profilePicture,
+      },
+    });
+  } catch (error) {
+    console.error("Verify OTP error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

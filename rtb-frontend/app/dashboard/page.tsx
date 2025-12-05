@@ -30,11 +30,11 @@ const StatCard = ({
     style={{
       backgroundColor: "white",
       borderRadius: "12px",
-      padding: "1.5rem",
+      padding: "1rem",
       boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
       display: "flex",
       alignItems: "center",
-      gap: "1.5rem",
+      gap: "1rem",
       transition: "all 0.3s ease",
       cursor: "pointer",
       border: `2px solid ${bgColor}20`,
@@ -50,8 +50,8 @@ const StatCard = ({
   >
     <div
       style={{
-        width: "60px",
-        height: "60px",
+        width: "50px",
+        height: "50px",
         borderRadius: "12px",
         backgroundColor: `${bgColor}20`,
         display: "flex",
@@ -60,7 +60,7 @@ const StatCard = ({
         flexShrink: 0,
       }}
     >
-      <IconComponent size="32" color={color} />
+      <IconComponent size="28" color={color} />
     </div>
     <div>
       <p style={{ margin: 0, color: "#666", fontSize: "0.875rem", fontWeight: "500" }}>{label}</p>
@@ -173,8 +173,8 @@ const DashboardPage = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-              gap: "1.5rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: "1rem",
             }}
           >
             <StatCard
@@ -209,8 +209,8 @@ const DashboardPage = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-              gap: "1.5rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: "1rem",
             }}
           >
             <StatCard

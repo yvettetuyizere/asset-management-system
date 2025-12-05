@@ -64,5 +64,15 @@ export const sendOtpEmail = async (email: string, otp: string): Promise<void> =>
     `,
   };
 
-  await transporter.sendMail(mailOptions);
+  console.log("📧 Attempting to send OTP email to:", email);
+  console.log("📧 Email config - HOST:", process.env.MAIL_HOST, "PORT:", process.env.MAIL_PORT);
+  console.log("📧 Email config - USER:", process.env.MAIL_USER);
+  
+  try {
+    const result = await transporter.sendMail(mailOptions);
+    console.log("✅ OTP email sent successfully:", result.messageId);
+  } catch (error) {
+    console.error("❌ Failed to send OTP email:", error);
+    throw error;
+  }
 };
